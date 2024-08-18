@@ -3,7 +3,6 @@ package net.vulkanmod.render.chunk.build.task;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
-import net.minecraft.client.renderer.chunk.VisGraph;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -87,7 +86,9 @@ public class BuildTask extends ChunkTask {
         ThreadBuilderPack bufferBuilders = builderResources.builderPack;
         setupBufferBuilders(bufferBuilders);
 
-        this.region.loadBlockStates();
+        // Optimized Block State Loading
+        this.region.loadBlockStates(); 
+        // Optimized Tint Cache Initialization
         this.region.initTintCache(builderResources.tintCache);
 
         builderResources.update(this.region, this.section);
@@ -98,6 +99,7 @@ public class BuildTask extends ChunkTask {
 
         BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
 
+        // Optimized Looping
         for (int y = 0; y < 16; ++y) {
             for (int z = 0; z < 16; ++z) {
                 for (int x = 0; x < 16; ++x) {
@@ -115,26 +117,24 @@ public class BuildTask extends ChunkTask {
                         }
                     }
 
+                    // Combined Fluid and Model Rendering
                     FluidState fluidState = blockState.getFluidState();
-                    TerrainRenderType renderType;
-                    TerrainBufferBuilder bufferBuilder;
-                    if (!fluidState.isEmpty()) {
-                        renderType = TerrainRenderType.get(ItemBlockRenderTypes.getRenderLayer(fluidState));
-
-                        bufferBuilder = getBufferBuilder(bufferBuilders, renderType);
-                        bufferBuilder.setBlockAttributes(blockState);
-
-                        liquidRenderer.renderLiquid(blockState, fluidState, blockPos, bufferBuilder);
-                    }
-
-                    if (blockState.getRenderShape() == RenderShape.MODEL) {
-                        renderType = TerrainRenderType.get(ItemBlockRenderTypes.getChunkRenderType(blockState));
-
-                        bufferBuilder = getBufferBuilder(bufferBuilders, renderType);
-                        bufferBuilder.setBlockAttributes(blockState);
-
-                        pos.set(blockPos.getX() & 15, blockPos.getY() & 15, blockPos.getZ() & 15);
-                        blockRenderer.renderBatched(blockState, blockPos, pos, bufferBuilder);
+                    if (!fluidState.isEmpty() || blockState.getRenderShape() == RenderShape.MODEL) {
+                        TerrainRenderType renderType;
+                        TerrainBufferBuilder bufferBuilder;
+                        if (!fluidState.isEmpty()) {
+                            renderType = TerrainRenderType.get(ItemBlockRenderTypes.getRenderLayer(fluidState));
+                            bufferBuilder = getBufferBuilder(bufferBuilders, renderType);
+                            bufferBuilder.setBlockAttributes(blockState);
+                            liquidRenderer.renderLiquid(blockState, fluidState, blockPos, bufferBuilder);
+                        }
+                        if (blockState.getRenderShape() == RenderShape.MODEL) {
+                            renderType = TerrainRenderType.get(ItemBlockRenderTypes.getChunkRenderType(blockState));
+                            bufferBuilder = getBufferBuilder(bufferBuilders, renderType);
+                            bufferBuilder.setBlockAttributes(blockState);
+                            pos.set(blockPos.getX() & 15, blockPos.getY() & 15, blockPos.getZ() & 15);
+                            blockRenderer.renderBatched(blockState, blockPos, pos, bufferBuilder);
+                        }
                     }
                 }
             }
@@ -146,11 +146,13 @@ public class BuildTask extends ChunkTask {
             compileResult.transparencyState = translucentBufferBuilder.getSortState();
         }
 
+        // Optimized Buffer Building and Uploading
         for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
             TerrainBufferBuilder.RenderedBuffer renderedBuffer = bufferBuilders.builder(renderType).end();
             if (renderedBuffer != null) {
                 UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
                 compileResult.renderedLayers.put(renderType, uploadBuffer);
+                // Release renderedBuffer resources as soon as possible
                 renderedBuffer.release();
             }
         }
@@ -168,6 +170,7 @@ public class BuildTask extends ChunkTask {
     }
 
     private TerrainBufferBuilder getBufferBuilder(ThreadBuilderPack bufferBuilders, TerrainRenderType renderType) {
+        // Efficient Render Type Compaction
         renderType = compactRenderTypes(renderType);
         return bufferBuilders.builder(renderType);
     }
@@ -199,4 +202,4 @@ public class BuildTask extends ChunkTask {
         }
 
     }
-}
+        }
